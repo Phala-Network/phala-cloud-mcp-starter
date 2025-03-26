@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  jupyter-notebook:
+    image: jupyter/datascience-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+      - jupyter_data:/home/jovyan
+      - /tmp:/tmp
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
+    command: >
+      bash -c "pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org jupyter-collaboration &&
+                mkdir -p /home/jovyan &&
+                echo '{\"cells\":[{\"cell_type\":\"code\",\"execution_count\":null,\"metadata\":{},\"outputs\":[],\"source\":[\"# Welcome to Jupyter!\\n\\n# This is a code cell. You can run it by clicking the play button, or by pressing Shift+Enter.\"],\"id\":\"welcome-cell\"}],\"metadata\":{\"kernelspec\":{\"display_name\":\"Python 3\",\"language\":\"python\",\"name\":\"python3\"}},\"nbformat\":4,\"nbformat_minor\":5}' > /home/jovyan/notebook.ipynb &&
+                python -m ipykernel install --user &&
+                jupyter kernelspec list &&
+                jupyter lab --ip=0.0.0.0 --no-browser --ServerApp.allow_origin='*' --ServerApp.disable_check_xsrf=True --ServerApp.root_dir='/home/jovyan'"
+    networks:
+      - mcp-network
+
+  jupyter-mcp-server:
+    image: tolak/jupyter-mcp-server:0.1.2
+    ports:
+      - "8000:8000"
+    command: >
+      bash -c "
+        echo 'Waiting for Jupyter notebook to start...' &&
+        sleep 30 &&
+        echo 'Starting MCP server now' &&
+        python -m jupyter_mcp_server.server
+      "
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+      - /tmp:/tmp
+    environment:
+      - SERVER_URL=http://jupyter-notebook:8888
+      - TOKEN=${JUPYTER_TOKEN}
+      - NOTEBOOK_PATH=notebook.ipynb
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+
+volumes:
+  jupyter_data:

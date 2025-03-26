@@ -1,150 +1,149 @@
-<!--
-  ~ Copyright (c) 2023-2024 Datalayer, Inc.
-  ~
-  ~ BSD 3-Clause License
--->
+<div align="center">
+  <a href="https://github.com/Phala-Network/phala-cloud-mcp-starter">
+    <h1>Phala Cloud MCP Starter</h1>
+  </a>
+  <a href="https://cloud.phala.network/">
+    <img height="320" src="imgs/banner.jpg" />
+    <br />
+  </a>
+  <p align="center">
+    This is a starter template for building a Jupyter Notebook remote MCP server on Phala Cloud. You can fork this repository to start your own MCP server.
+    <br />
+    <a href="https://phalanetwork.notion.site/Phala-Cloud-User-Guide-1700317e04a18018a98ed9ea39b02670"><strong>Explore Phala Cloud User Guide »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/Phala-Network/cloud-tee-starter-template/issues">Report Bug</a>
+    ·
+    <a href="https://t.me/+nbhjx1ADG9EyYmI9">Telegram</a>
+    ·
+    <a href="https://discord.gg/phala-network">Discord</a>
+  </p>
+</div>
 
-[![Datalayer](https://assets.datalayer.tech/datalayer-25.svg)](https://datalayer.io)
+## 📋 Prerequisites
 
-[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=1ABC9C)](https://github.com/sponsors/datalayer)
+- Fork the GitHub repository `phala-cloud-mcp-starter`
+- Phala Cloud account ([Sign up with Redeem Code](https://cloud.phala.network/register?invite=WELCOME10))
+- Docker Hub/Registry account, to push the built docker image to the registry
 
-# 🪐 ✨ Jupyter MCP Server
+# Build remote MCP server on Phala Cloud
 
-[![Github Actions Status](https://github.com/datalayer/jupyter-mcp-server/workflows/Build/badge.svg)](https://github.com/datalayer/jupyter-mcp-server/actions/workflows/build.yml)
-[![PyPI - Version](https://img.shields.io/pypi/v/jupyter-mcp-server)](https://pypi.org/project/jupyter-mcp-server)
-[![smithery badge](https://smithery.ai/badge/@datalayer/jupyter-mcp-server)](https://smithery.ai/server/@datalayer/jupyter-mcp-server)
+## Deploy your first MCP server
 
-Jupyter MCP Server is a [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) server implementation that provides interaction with Jupyter notebooks 📓 running in a local JupyterLab 💻.
+This guide will walk you through how to deploy a Jupyter Notebook remote MCP server to TEE with Phala Cloud. You will then customize this example to suit your needs.
 
-![Jupyter MCP Server](https://assets.datalayer.tech/jupyter-mcp/jupyter-mcp-server-claude-demo.gif)
+> [MCP](https://www.anthropic.com/news/model-context-protocol) is an open standard that enables developers to build secure, two-way connections between their data sources and AI-powered tools.
 
-## Start JupyterLab
+![MCP Demo Locally](./imgs/mcp-demo-local.gif)
 
-Make sure you have the following installed. The modifications made on the notebook can be seen thanks to [Jupyter Real Time Collaboration](https://jupyterlab.readthedocs.io/en/stable/user/rtc.html) (RTC).
+The original Jupyter Notebook MCP server is implemented in [here](https://github.com/datalayer-inc/jupyter_mcp_server). We forked it to this repo and change the transport to `sse` to support the remote server. Now you can test locally and deploy the MCP server to Phala Cloud with the [docker compose](docker-compose.yml) file in this repo.
+
+## Local development
+
+### Run jupyter notebook MCP server locally
+
+At the root of this repo, run the following command to start the jupyter notebook server and the MCP server.
 
 ```bash
-pip install jupyterlab jupyter-collaboration ipykernel
+docker compose up
 ```
 
-Then, start JupyterLab with the following command:
+the jupyter notebook server will be available at `http://localhost:8888` and the MCP server will be available at `http://localhost:8000` according to the setup in the [docker compose](docker-compose.yml) file. You will need to provide the token to access the jupyter notebook server, which is set to `phala` in the [docker compose](docker-compose.yml) file.
+
+In a new terminal, run the [MCP inspector](https://github.com/modelcontextprotocol/inspector). The MCP inspector is an interactive MCP client that allows you to connect to jupyter notebook MCP server and invoke tools from a web browser.
 
 ```bash
-jupyter lab --port 8888 --IdentityProvider.token MY_TOKEN --ip 0.0.0.0
+npx @modelcontextprotocol/inspector@latest
 ```
 
-> [!NOTE]
-> The `--ip` is set to `0.0.0.0` to allow the MCP server running in a Docker container to access your local JupyterLab.
+Open the MCP inspector in your web browser:
 
-## Usage with Claude Desktop
+```bash
+http://localhost:5173
+```
 
-To use this with Claude Desktop, add the following to your claude_desktop_config.json:
+In the inspector, set **Transport Type** to `SSE` andenter the URL of jupyter notebook MCP server, http://localhost:8000/sse, and click **Connect**. Then in the **Tools** tab, you can see the tools provided by the jupyter notebook server.
 
-> [!IMPORTANT]
-> Ensure the port of the `SERVER_URL`and `TOKEN` match those used in the `jupyter lab` command.
-> The `NOTEBOOK_PATH` should be relative to the directory where JupyterLab was started.
+![MCP Inspector](./imgs/inspector.png)
 
-### MacOS and Windows
+### Interact with the MCP server
+
+Note that the MPC server is running locally at `http://localhost:8000/sse`, so next we need to config the MCP client to connect to the MCP server. The screenshot below shows the config with [Cherry Studio](https://docs.cherry-ai.com/en-us).
+
+![MCP Config](./imgs/cherry-studio-config.png)
+
+Navigate to the chat page and you can type in your prompt to ask the client use the LLM to help you manage your notebook, for example we ask the LLM to draw a curve of sin(x) on the notebook.
+
+![MCP Demo Locally](./imgs/mcp-demo-local.gif)
+
+For other MCP clients like using [Claude Desktop](https://claude.ai/download), you can use the following config by edit the config file.
+
+> [mcp-remote](https://www.npmjs.com/package/mcp-remote) is a tool used to connect an MCP Client that only supports local (stdio) servers to a Remote MCP Server, with auth support.
 
 ```json
 {
   "mcpServers": {
-    "jupyter": {
-      "command": "docker",
+    "math": {
+      "command": "npx",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "SERVER_URL",
-        "-e",
-        "TOKEN",
-        "-e",
-        "NOTEBOOK_PATH",
-        "datalayer/jupyter-mcp-server:latest"
-      ],
-      "env": {
-        "SERVER_URL": "http://host.docker.internal:8888",
-        "TOKEN": "MY_TOKEN",
-        "NOTEBOOK_PATH": "notebook.ipynb"
-      }
+        "mcp-remote",
+        "http://localhost:8000/sse"
+      ]
     }
   }
 }
 ```
 
-### Linux
+## Deploy to Phala Cloud
+
+### Deploy the MCP server to Phala Cloud
+
+You can follow this [tutorial](https://github.com/Phala-Network/phala-cloud-docs/blob/main/docs/deploy-to-phala-cloud.md) to deploy your MCP server to Phala Cloud. Here are general steps to deploy your MCP server to Phala Cloud:
+
+1. On the [Phala Cloud](https://phala.network/cloud) dashboard, click **Deploy** and choose **Docker Compose** option for deployment.
+
+![Phala Cloud Deploy](./imgs/choose-docker-deploy.png)
+
+2. Navigate to **Advanced** tab, copy this [docker compose](docker-compose.yml) file to the input box.
+
+![Phala Cloud Deploy](./imgs/copy-docker-compse.png)
+
+3. Choose a plan and set the environment variables **JUPYTER_TOKEN** in the **Secure Environment Variables** section, click **Create**.
+
+![Set Environment Variables](./imgs/set-env.png)
+
+4. Wait several minutes here because the VM will download the docker images, after you see the status become **Running** you can navigate to the **Containers** tab and you will see the Jupyter notebook container and the MCP server container are running.
+
+![Containers](./imgs/dashboard-container.png)
+
+### Configure the MCP client to connect to the remote MCP server
+
+By navigating to the **Network** tab, you can find the **Public Enpoints** of the Juypter Notebook and the Juypter MCP server. You can configure a MCP client to connect to the Juypter MCP server with it's public endpoint.
 
 ```json
 {
   "mcpServers": {
-    "jupyter": {
-      "command": "docker",
+    "math": {
+      "command": "npx",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "SERVER_URL",
-        "-e",
-        "TOKEN",
-        "-e",
-        "NOTEBOOK_PATH",
-        "--network=host",
-        "datalayer/jupyter-mcp-server:latest"
-      ],
-      "env": {
-        "SERVER_URL": "http://localhost:8888",
-        "TOKEN": "MY_TOKEN",
-        "NOTEBOOK_PATH": "notebook.ipynb"
-      }
+        "mcp-remote",
+        "https://7ea38363423bf111180406f5c37c40fa48482d40-8000.dstack-prod2.phala.network/sse"
+      ]
     }
   }
 }
 ```
 
-## Components
+### Verify the Attestation of the MCP server
 
-### Tools
+Navigate to the **Attestation** tab, you can see the attestation of the your CVM. The attestation is a proof that the MCP server is running on the TEE. You can click the **Check Attestation** button to verify the attestation on the exploer.
 
-The server currently offers 3 tools:
+![Attestation](./imgs/mcp-attestation.png)
 
-1. `add_execute_code_cell`
+Further more, you can generate the attestation of the MCP server inside the container, head to this [guide](https://docs.phala.network/phala-cloud/migration/generate-ra-report) for more details.
 
-- Add and execute a code cell in a Jupyter notebook.
-- Input:
-  - `cell_content`(string): Code to be executed.
-- Returns: Cell output.
+## Troubleshooting
 
-2. `add_markdown_cell`
+1. MCP Inspector: `Error in /sse route: ReferenceError: fetch is not defined`
 
-- Add a markdown cell in a Jupyter notebook.
-- Input:
-  - `cell_content`(string): Markdown content.
-- Returns: Success message.
-
-3. `download_earth_data_granules`
-
-   ⚠️ We plan to migrate this tool to a separate repository in the future as it is specific to Geospatial analysis.
-
-- Add a code cell in a Jupyter notebook to download Earth data granules from NASA Earth Data.
-- Input:
-  - `folder_name`(string): Local folder name to save the data.
-  - `short_name`(string): Short name of the Earth dataset to download.
-  - `count`(int): Number of data granules to download.
-  - `temporal` (tuple): (Optional) Temporal range in the format (date_from, date_to).
-  - `bounding_box` (tuple): (Optional) Bounding box in the format (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat).
-- Returns: Cell output.
-
-## Building
-
-```bash
-docker build -t datalayer/jupyter-mcp-server .
-```
-
-## Installing via Smithery
-
-To install Jupyter MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@datalayer/jupyter-mcp-server):
-
-```bash
-npx -y @smithery/cli install @datalayer/jupyter-mcp-server --client claude
-```
+    This is because you are using an older version of node.js in your system. Please upgrade to a newer version.
