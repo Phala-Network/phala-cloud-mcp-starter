@@ -85,7 +85,7 @@ For other MCP clients like using [Claude Desktop](https://claude.ai/download), y
 {
   "mcpServers": {
     "math": {
-      "command": "npx",
+      "command": "/Users/wangwenfeng/.nvm/versions/node/v22.0.0/bin/npx",
       "args": [
         "mcp-remote",
         "http://localhost:8000/sse"
@@ -94,6 +94,8 @@ For other MCP clients like using [Claude Desktop](https://claude.ai/download), y
   }
 }
 ```
+
+> To avoid the fetch error, we use full path to specific a specific version of `npx` in the config.
 
 ## Deploy to Phala Cloud
 
@@ -119,18 +121,21 @@ You can follow this [tutorial](https://github.com/Phala-Network/phala-cloud-docs
 
 ### Configure the MCP client to connect to the remote MCP server
 
-By navigating to the **Network** tab, you can find the **Public Enpoints** of the Juypter Notebook and the Juypter MCP server. You can configure a MCP client to connect to the Juypter MCP server with it's public endpoint.
+By navigating to the **Network** tab, you can find the **Public Enpoints** of the Juypter Notebook and the Juypter MCP server. You can configure a MCP client to connect to the Juypter MCP server with it's public endpoint on Phala Cloud.
+
+> `https://4514a347652928ba60512c42c4ad8470cf0a38e5-8000.teehouse.phatfn.xyz:7094` here is the public endpoint of the Juypter MCP server.
 
 ```json
 {
   "mcpServers": {
-    "math": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://7ea38363423bf111180406f5c37c40fa48482d40-8000.dstack-prod2.phala.network/sse"
-      ]
-    }
+      "juypter": {
+        "command": "/Users/wangwenfeng/.nvm/versions/node/v22.0.0/bin/npx",
+        "args": [
+          "-y",
+          "mcp-remote",
+          "https://4514a347652928ba60512c42c4ad8470cf0a38e5-8000.teehouse.phatfn.xyz:7094/sse"
+        ]
+      }
   }
 }
 ```
@@ -145,6 +150,16 @@ Further more, you can generate the attestation of the MCP server inside the cont
 
 ## Troubleshooting
 
-1. MCP Inspector: `Error in /sse route: ReferenceError: fetch is not defined`
+1. Claude or MCP Inspector: `Error in /sse route: ReferenceError: fetch is not defined`
 
-    This is because you are using an older version of node.js in your system. Please upgrade to a newer version.
+    This is because you are using an older version of node.js in your system. Please change to a newer version or specify the full path to the `npx` command in the config file.
+    ```json
+      "juypter": {
+        "command": "/Users/wangwenfeng/.nvm/versions/node/v22.0.0/bin/npx",
+        "args": [
+          "-y",
+          "mcp-remote",
+          "https://4514a347652928ba60512c42c4ad8470cf0a38e5-8000.teehouse.phatfn.xyz:7094/sse"
+        ]
+      }
+    ```
