@@ -45,6 +45,7 @@ The original Jupyter Notebook MCP server is implemented in [here](https://github
 At the root of this repo, run the following command to start the jupyter notebook server and the MCP server.
 
 ```bash
+export JUPYTER_TOKEN=<set your own token>
 docker compose up
 ```
 
